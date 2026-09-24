@@ -47,4 +47,4 @@ Questo progetto è distribuito sotto la **Licenza MIT**. Consulta il file [LICEN
 
 Se questo script ti ha fatto risparmiare ore di lavoro e vuoi supportare lo sviluppo di altri strumenti gratuiti, puoi offrirmi un caffè!
 
-[![Sostenimi su Buy Me A Coffee](https://shields.io)](https://buymeacoffee.com)
+[![Sostenimi su Buy Me A Coffee](https://shields.io)](https://buymeacoffee.com/johnsoul)
