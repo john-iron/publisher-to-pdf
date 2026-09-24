@@ -1,0 +1,86 @@
+# ==============================================================================
+# CONVERSIONE MULTI-CARTELLA PUBLISHER -> PDF (con timeout anti-blocco)
+# ==============================================================================
+
+$cartelleInput = @(
+    "C:\Folder1",
+    "C:\Folder2"
+)
+$timeoutSec = 90   # secondi massimi per file
+
+# Chiude eventuali Publisher rimasti appesi
+Get-Process MSPUB -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# Script "operaio": converte UN file e termina
+$workerPath = Join-Path $env:TEMP "pub2pdf_worker.ps1"
+@'
+param($src, $dst)
+$codice = 1
+$pub = $null
+try {
+    $pub = New-Object -ComObject Publisher.Application
+    try { $pub.ActiveWindow.Visible = $true } catch {}
+    Write-Host "  apertura..."
+    $doc = $pub.Open($src, $true, $false, 3)      # sola lettura, non salvare
+    Write-Host "  esportazione..."
+    $doc.ExportAsFixedFormat(2, $dst)             # 2 = PDF
+    $codice = 0
+} catch {
+    Write-Host "  $_" -ForegroundColor Red
+} finally {
+    if ($pub) {
+        try { $pub.Quit() } catch {}
+        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($pub) | Out-Null
+    }
+}
+exit $codice
+'@ | Set-Content -Path $workerPath -Encoding UTF8
+
+foreach ($cartella in $cartelleInput) {
+
+    if (-not (Test-Path $cartella)) {
+        Write-Host "Cartella non trovata, salto: $cartella" -ForegroundColor Yellow
+        continue
+    }
+    Write-Host "`n=== CARTELLA: $cartella ===" -ForegroundColor Yellow
+
+    $cartellaOutput = Join-Path $cartella "ESPORTAZIONI"
+    if (-not (Test-Path $cartellaOutput)) { New-Item $cartellaOutput -ItemType Directory | Out-Null }
+
+    $filePublisher = @(Get-ChildItem -Path $cartella -Filter "*.pub")
+    $filePublisher | Unblock-File      # evita la Visualizzazione protetta
+    Write-Host "Trovati $($filePublisher.Count) file." -ForegroundColor Green
+
+    $indice = 0
+    foreach ($file in $filePublisher) {
+        $indice++
+        $filePdf = Join-Path $cartellaOutput "$($file.BaseName).pdf"
+        $tag = "[$indice/$($filePublisher.Count)]"
+
+        if (Test-Path $filePdf) {
+            Write-Host "$tag Gia' convertito, salto: $($file.Name)" -ForegroundColor DarkGray
+            continue
+        }
+
+        Write-Host "$tag $($file.Name)"
+        $argomenti = "-NoProfile -ExecutionPolicy Bypass -File `"$workerPath`" `"$($file.FullName)`" `"$filePdf`""
+        $p = Start-Process powershell.exe -ArgumentList $argomenti -PassThru -NoNewWindow
+        $null = $p.Handle   # necessario per leggere ExitCode
+
+        if (-not $p.WaitForExit($timeoutSec * 1000)) {
+            Write-Host "$tag BLOCCATO oltre $timeoutSec s, salto: $($file.Name)" -ForegroundColor Red
+            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+            Get-Process MSPUB -ErrorAction SilentlyContinue | Stop-Process -Force
+            continue
+        }
+
+        if ($p.ExitCode -eq 0 -and (Test-Path $filePdf)) {
+            Write-Host "$tag Convertito" -ForegroundColor Cyan
+        } else {
+            Write-Host "$tag ERRORE: $($file.Name)" -ForegroundColor Red
+        }
+    }
+}
+
+Get-Process MSPUB -ErrorAction SilentlyContinue | Stop-Process -Force
+Write-Host "`nOperazione completata!" -ForegroundColor Green
