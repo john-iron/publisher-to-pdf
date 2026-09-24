@@ -1,7 +1,7 @@
 # 📄 publisher-to-pdf
 
-[![License: MIT](https://shields.io)](https://opensource.org)
-[![PowerShell](https://shields.io)](https://microsoft.com)
+[(https://shields.io)](https://opensource.org)
+[(https://shields.io)](https://microsoft.com)
 
 Uno script PowerShell leggero ed efficace per la **conversione massiva e automatizzata** di file Microsoft Publisher (`.pub`) in formato PDF. 
 
