@@ -2,6 +2,19 @@
 # CONVERSIONE MULTI-CARTELLA PUBLISHER -> PDF (con timeout anti-blocco)
 # ==============================================================================
 
+<#
+.SYNOPSIS
+    Conversione massiva file .pub in pdf
+
+.DESCRIPTION
+    Semplice script powershell, per la conversione massiva di file .pub in pdf
+
+.LICENSE
+    Questo script è distribuito sotto la Licenza MIT. 
+    Copyright (c) 2026 Giovanni Firrincieli. 
+    Vedi il file LICENSE nel repository per il testo completo.
+#>
+
 $cartelleInput = @(
     "C:\Folder1",
     "C:\Folder2"
